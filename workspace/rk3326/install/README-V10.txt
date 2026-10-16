@@ -34,5 +34,5 @@ Logs are in nextui/.userdata/rk3326/logs/ (port.txt, launch.txt,
 nextui.txt, and one file per emulator). Send those back.
 
 NOT YET WORKING
-Wi-Fi and Bluetooth settings, deep sleep, Clock tool, LED and bootlogo
+Wi-Fi and Bluetooth settings, deep sleep, LED and bootlogo
 tools, Pak Store and updater.

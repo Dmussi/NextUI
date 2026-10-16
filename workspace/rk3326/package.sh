@@ -58,6 +58,7 @@ cp "$W/all/settings/build/$P/settings.elf" "$CARD/Tools/$P/Settings.pak/"
 cp "$W/all/minput/build/$P/minput.elf" "$CARD/Tools/$P/Input.pak/"
 cp "$W/all/battery/build/$P/battery.elf" "$CARD/Tools/$P/Battery.pak/"
 cp "$W/all/gametime/build/$P/gametime.elf" "$CARD/Tools/$P/Game Tracker.pak/"
+cp "$W/all/clock/build/$P/clock.elf" "$CARD/Tools/$P/Clock.pak/"
 
 # stock cores (whatever has been built)
 for core in fceumm gambatte gpsp picodrive snes9x pcsx_rearmed; do

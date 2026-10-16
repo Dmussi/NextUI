@@ -19,16 +19,99 @@ enum {
 	CURSOR_AMPM,
 };
 
+// State shared with the helpers below. These used to be locals of main()
+// with GCC nested functions; plain statics also build with clang.
+static SDL_Surface* screen;
+static SDL_Surface* digits;
+static int32_t day_selected;
+static int32_t month_selected;
+static uint32_t year_selected;
+static int32_t hour_selected;
+static int32_t minute_selected;
+static int32_t seconds_selected;
+static int32_t am_selected;
+
+// x,y,w are pre-scaled
+int blit(int i, int x, int y) {
+	SDL_BlitSurface(digits, &(SDL_Rect){i*SCALE1(10),0,SCALE2(10,16)}, screen, &(SDL_Rect){x,y});
+	return x + SCALE1(10);
+}
+void blitBar(int x, int y, int w) {
+	GFX_blitPill(ASSET_UNDERLINE, screen, &(SDL_Rect){x,y,w});
+}
+int blitNumber(int num, int x, int y) {
+	int n;
+	if (num > 999) {
+		n = num / 1000;
+		num -= n * 1000;
+		x = blit(n, x,y);
+		
+		n = num / 100;
+		num -= n * 100;
+		x = blit(n, x,y);
+	}
+	n = num / 10;
+	num -= n * 10;
+	x = blit(n, x,y);
+	
+	n = num;
+	x = blit(n, x,y);
+	
+	return x;
+}
+void validate(void) {
+	// leap year
+	uint32_t february_days = 28;
+	if ( ((year_selected % 4 == 0) && (year_selected % 100 != 0)) || (year_selected % 400 == 0)) february_days = 29;
+
+	// day
+	// if (day_selected < 1) day_selected = 1;
+	if (month_selected > 12) month_selected -= 12;
+	else if (month_selected < 1) month_selected += 12;
+
+	if (year_selected > 2100) year_selected = 2100;
+	else if (year_selected < 1970) year_selected = 1970;
+
+	switch(month_selected)
+	{
+		case 2:
+			if (day_selected > february_days) day_selected -= february_days;
+			else if (day_selected<1) day_selected += february_days;
+			break;
+		case 4:
+		case 6:
+		case 9:
+		case 11:
+			if (day_selected > 30) day_selected -= 30;
+			else if (day_selected < 1) day_selected += 30;
+
+			break;
+		default:
+			if (day_selected > 31) day_selected -= 31;
+			else if (day_selected < 1) day_selected += 31;
+			break;
+	}
+
+	// time
+	if (hour_selected > 23) hour_selected -= 24;
+	else if (hour_selected < 0) hour_selected += 24;
+	if (minute_selected > 59) minute_selected -= 60;
+	else if (minute_selected < 0) minute_selected += 60;
+	if (seconds_selected > 59) seconds_selected -= 60;
+	else if (seconds_selected < 0) seconds_selected += 60;
+}
+
+
 int main(int argc , char* argv[]) {
 	PWR_setCPUSpeed(CPU_SPEED_AUTO);
 	
-	SDL_Surface* screen = GFX_init(MODE_MENU);
+	screen = GFX_init(MODE_MENU);
 	PAD_init();
 	PWR_init();
 	InitSettings();
 	
 	// TODO: make use of SCALE1()
-	SDL_Surface* digits =  SDL_CreateRGBSurfaceWithFormat(SDL_SWSURFACE, SCALE1(120), SCALE1(16), 32, screen->format->format);
+	digits =  SDL_CreateRGBSurfaceWithFormat(SDL_SWSURFACE, SCALE1(120), SCALE1(16), 32, screen->format->format);
 	SDL_FillRect(digits, NULL, RGB_BLACK);
 	
 	SDL_Surface* digit;
@@ -59,83 +142,13 @@ int main(int argc , char* argv[]) {
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 	
-	int32_t day_selected = tm.tm_mday;
-	int32_t month_selected = tm.tm_mon + 1;
-	uint32_t year_selected = tm.tm_year + 1900;
-	int32_t hour_selected = tm.tm_hour;
-	int32_t minute_selected = tm.tm_min;
-	int32_t seconds_selected = tm.tm_sec;
-	int32_t am_selected = tm.tm_hour < 12;
-	
-	// x,y,w are pre-scaled
-	int blit(int i, int x, int y) {
-		SDL_BlitSurface(digits, &(SDL_Rect){i*SCALE1(10),0,SCALE2(10,16)}, screen, &(SDL_Rect){x,y});
-		return x + SCALE1(10);
-	}
-	void blitBar(int x, int y, int w) {
-		GFX_blitPill(ASSET_UNDERLINE, screen, &(SDL_Rect){x,y,w});
-	}
-	int blitNumber(int num, int x, int y) {
-		int n;
-		if (num > 999) {
-			n = num / 1000;
-			num -= n * 1000;
-			x = blit(n, x,y);
-			
-			n = num / 100;
-			num -= n * 100;
-			x = blit(n, x,y);
-		}
-		n = num / 10;
-		num -= n * 10;
-		x = blit(n, x,y);
-		
-		n = num;
-		x = blit(n, x,y);
-		
-		return x;
-	}
-	void validate(void) {
-		// leap year
-		uint32_t february_days = 28;
-		if ( ((year_selected % 4 == 0) && (year_selected % 100 != 0)) || (year_selected % 400 == 0)) february_days = 29;
-	
-		// day
-		// if (day_selected < 1) day_selected = 1;
-		if (month_selected > 12) month_selected -= 12;
-		else if (month_selected < 1) month_selected += 12;
-	
-		if (year_selected > 2100) year_selected = 2100;
-		else if (year_selected < 1970) year_selected = 1970;
-	
-		switch(month_selected)
-		{
-			case 2:
-				if (day_selected > february_days) day_selected -= february_days;
-				else if (day_selected<1) day_selected += february_days;
-				break;
-			case 4:
-			case 6:
-			case 9:
-			case 11:
-				if (day_selected > 30) day_selected -= 30;
-				else if (day_selected < 1) day_selected += 30;
-
-				break;
-			default:
-				if (day_selected > 31) day_selected -= 31;
-				else if (day_selected < 1) day_selected += 31;
-				break;
-		}
-	
-		// time
-		if (hour_selected > 23) hour_selected -= 24;
-		else if (hour_selected < 0) hour_selected += 24;
-		if (minute_selected > 59) minute_selected -= 60;
-		else if (minute_selected < 0) minute_selected += 60;
-		if (seconds_selected > 59) seconds_selected -= 60;
-		else if (seconds_selected < 0) seconds_selected += 60;
-	}
+	day_selected = tm.tm_mday;
+	month_selected = tm.tm_mon + 1;
+	year_selected = tm.tm_year + 1900;
+	hour_selected = tm.tm_hour;
+	minute_selected = tm.tm_min;
+	seconds_selected = tm.tm_sec;
+	am_selected = tm.tm_hour < 12;
 	
 	int option_count = 7;
 

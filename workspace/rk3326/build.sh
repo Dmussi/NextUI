@@ -60,7 +60,7 @@ git -C "$REPO" rev-parse --short HEAD > "$W/hash.txt"
 #######################################
 make -C "$W/rk3326/libmsettings"
 make -C "$W/rk3326/keymon"
-for d in nextui minarch nextval syncsettings show2 minput settings \
+for d in nextui minarch nextval syncsettings show2 minput settings clock \
          libbatmondb batmon battery libgametimedb gametimectl gametime; do
 	echo "== $d"
 	make -C "$W/all/$d"
