@@ -2713,6 +2713,28 @@ static void SND_audioCallback(void *userdata, uint8_t *stream, int len)
 
 	if (len > 0)
 		memset(out, 0, len * (sizeof(int16_t) * 2));
+
+#ifdef SND_DEBUG_HEARTBEAT
+	// every ~3 s: how often SDL asked for audio, how many frames came from the
+	// emulator vs. silence padding, and the loudest sample sent
+	static uint32_t hb_last = 0, hb_calls = 0, hb_real = 0, hb_pad = 0;
+	static int hb_peak = 0;
+	int16_t *s16 = (int16_t *)stream;
+	int total = (out - s16) / 2 + len;
+	hb_calls++;
+	hb_real += total - (len > 0 ? len : 0);
+	hb_pad += len > 0 ? len : 0;
+	for (int i = 0; i < total * 2; i++) {
+		int v = s16[i] < 0 ? -s16[i] : s16[i];
+		if (v > hb_peak) hb_peak = v;
+	}
+	uint32_t now = SDL_GetTicks();
+	if (now - hb_last > 3000) {
+		LOG_info("audio heartbeat: callbacks %u, frames from emulator %u, silence frames %u, peak %d\n",
+			hb_calls, hb_real, hb_pad, hb_peak);
+		hb_last = now; hb_calls = hb_real = hb_pad = 0; hb_peak = 0;
+	}
+#endif
 }
 static void SND_resizeBuffer(void)
 { // plat_sound_resize_buffer
@@ -3170,6 +3192,13 @@ size_t SND_batchSamples_fixed_rate(const SND_Frame *frames, size_t frame_count)
 	return total_consumed_frames;
 }
 
+// Which properties SDL may change when opening the audio device. The callback
+// always writes interleaved stereo S16, so platforms whose SDL may pick another
+// format or channel count restrict this (see platform.h).
+#ifndef SND_ALLOWED_CHANGES
+#define SND_ALLOWED_CHANGES SDL_AUDIO_ALLOW_ANY_CHANGE
+#endif
+
 void SND_init(double sample_rate, double frame_rate)
 { // plat_sound_init
 	LOG_info("SND_init\n");
@@ -3209,7 +3238,7 @@ void SND_init(double sample_rate, double frame_rate)
 	spec_in.callback = SND_audioCallback;
 
 #if defined(USE_SDL2)
-	snd.device_id = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, SDL_AUDIO_ALLOW_ANY_CHANGE);
+	snd.device_id = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, SND_ALLOWED_CHANGES);
 	if (snd.device_id <= 0)
 	{
 		LOG_info("SDL_OpenAudioDevice error: %s\n", SDL_GetError());
@@ -3229,6 +3258,8 @@ void SND_init(double sample_rate, double frame_rate)
 #endif
 
 	LOG_info("We now have audio device #%d\n", snd.device_id);
+	LOG_info("Audio spec out: freq %d format 0x%04x channels %d samples %d\n",
+		spec_out.freq, spec_out.format, spec_out.channels, spec_out.samples);
 
 	snd.frame_count = ((float)spec_out.freq / SCREEN_FPS) * 8; // buffer size based on sample rate out (times 12 samples headroom)
 	perf.buffer_size = snd.frame_count;
