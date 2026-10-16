@@ -38,6 +38,7 @@ log_runtime_state
 #######################################
 
 rk_prepare_arkos
+rk_setup_audio
 rk_link_arkos_roms
 
 # clear shadercache unconditionally, until it properly invalidates itself

@@ -53,6 +53,14 @@ struct input_event {
 };
 
 static int input_fds[RK_INPUT_COUNT];
+
+// SELECT+START chord standing in for the missing MENU button. The raw
+// SELECT/START states are tracked here and only forwarded when no chord is
+// active: minarch reads MENU+SELECT as "save and quit to the game switcher",
+// so SELECT must not still look pressed while the chord means MENU.
+static int raw_select = 0;
+static int raw_start = 0;
+static int menu_chord = 0;
 static uint32_t last_input_scan = 0;
 
 static void close_evdev_input(int i) {
@@ -337,6 +345,11 @@ static void poll_evdev_input(uint32_t tick) {
 					continue;
 				pressed = value;
 				btn = button_from_code(code, &id);
+				if (rk_key(RKK_MENU) < 0 && (btn == BTN_SELECT || btn == BTN_START)) {
+					if (btn == BTN_SELECT) raw_select = pressed;
+					else raw_start = pressed;
+					continue;
+				}
 			}
 			else if (event.type == EV_ABS) {
 				if (code == RAW_HATY) {
@@ -409,10 +422,23 @@ void PLAT_pollInput(void) {
 	poll_sdl_input(tick);
 	poll_evdev_input(tick);
 
-	// No MENU button on the V10: SELECT+START together act as MENU.
+	// No MENU button on the V10: SELECT+START together act as MENU. Once the
+	// chord starts it lasts until both buttons are up, and SELECT/START are
+	// reported released for that whole time.
 	if (rk_key(RKK_MENU) < 0) {
-		int chord = (pad.is_pressed & BTN_SELECT) && (pad.is_pressed & BTN_START);
-		apply_button_state(BTN_MENU, BTN_ID_MENU, chord, tick);
+		if (raw_select && raw_start) menu_chord = 1;
+		else if (!raw_select && !raw_start) menu_chord = 0;
+
+		if (menu_chord) {
+			apply_button_state(BTN_SELECT, BTN_ID_SELECT, 0, tick);
+			apply_button_state(BTN_START, BTN_ID_START, 0, tick);
+			apply_button_state(BTN_MENU, BTN_ID_MENU, 1, tick);
+		}
+		else {
+			apply_button_state(BTN_MENU, BTN_ID_MENU, 0, tick);
+			apply_button_state(BTN_SELECT, BTN_ID_SELECT, raw_select, tick);
+			apply_button_state(BTN_START, BTN_ID_START, raw_start, tick);
+		}
 	}
 
 	drain_wake_fd();

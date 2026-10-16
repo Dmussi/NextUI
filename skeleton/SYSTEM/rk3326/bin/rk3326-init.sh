@@ -66,7 +66,7 @@ rk_link_arkos_roms() {
 		dst="$ROMS_PATH/$next"
 		[ -d "$src" ] || continue
 		# only folders that hold at least one file
-		[ -n "$(find "$src" -maxdepth 1 -type f ! -name '.*' ! -name '*.txt' | head -1)" ] || continue
+		[ -n "$(find "$src" -maxdepth 1 -type f ! -name '.*' ! -name '*.txt' -print -quit)" ] || continue
 		mkdir -p "$dst"
 		mountpoint -q "$dst" && continue
 		mount --bind "$src" "$dst" 2>/dev/null \
@@ -90,4 +90,25 @@ rk_unlink_arkos_roms() {
 		umount "$dst" 2>/dev/null || true
 	done < /tmp/nextui-rom-binds
 	rm -f /tmp/nextui-rom-binds
+}
+
+# Requires LOGS_PATH. Make sure the rk817 codec routes to the speaker and
+# record the audio state. (No .asoundrc is copied into NextUI's HOME: NextUI
+# reads a "type hw" entry there as a USB DAC and would move volume control.)
+rk_setup_audio() {
+	path=$(amixer -c 0 sget 'Playback Path' 2>/dev/null | sed -n "s/.*Item0: '\(.*\)'.*/\1/p")
+	if [ "$path" = "OFF" ] || [ -z "$path" ]; then
+		amixer -q -c 0 sset 'Playback Path' SPK 2>/dev/null || true
+	fi
+
+	{
+		echo "== audio $(date)"
+		echo "user=$(id -u) HOME=$HOME"
+		echo "-- /etc/asound.conf"; cat /etc/asound.conf 2>&1
+		echo "-- \$HOME/.asoundrc"; cat "$HOME/.asoundrc" 2>&1
+		echo "-- aplay -l"; aplay -l 2>&1
+		echo "-- aplay -L"; aplay -L 2>&1 | head -40
+		echo "-- amixer"; amixer -c 0 2>&1
+		echo "-- who holds the sound device"; fuser -v /dev/snd/* 2>&1
+	} > "$LOGS_PATH/audio.txt" 2>&1
 }

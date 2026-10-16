@@ -256,12 +256,13 @@ void SetHDMI(int value) { (void)value; }
 
 ///////// Platform specific scaling
 
-// The rk817 'Playback' control is in dB steps, so the bottom of its range is
-// near-silent; map NextUI's 0-20 onto the audible upper part (raw percent).
+// The rk817 'Playback' control is in dB steps (0-237, about 0.5 dB each), so
+// raw percentages are far too quiet below ~80%. SetRawVolume uses amixer's
+// perceptual mapping (-M) instead, which spreads 0-100 over the dB range.
 int scaleVolume(int value) {
 	if (value <= 0) return 0;
 	if (value > 20) value = 20;
-	return 40 + value * 3; // 43% .. 100%
+	return value * 5; // 5% .. 100% (mapped)
 }
 
 int scaleBrightness(int value) {
@@ -301,10 +302,10 @@ void SetRawColortemp(int val) { (void)val; }
 
 void SetRawVolume(int val) { // in: 0-100
 	char cmd[128];
-	snprintf(cmd, sizeof(cmd), "amixer -q -c 0 sset '" MIXER_CONTROL "' %d%% >/dev/null 2>&1", val);
+	snprintf(cmd, sizeof(cmd), "amixer -q -M -c 0 sset '" MIXER_CONTROL "' %d%% >/dev/null 2>&1", val);
 	if (system(cmd) != 0) {
 		// the control name differs on some kernels; fall back to the card's master
-		snprintf(cmd, sizeof(cmd), "amixer -q -c 0 sset Master %d%% >/dev/null 2>&1", val);
+		snprintf(cmd, sizeof(cmd), "amixer -q -M -c 0 sset Master %d%% >/dev/null 2>&1", val);
 		if (system(cmd) != 0) { /* nothing else to try */ }
 	}
 }
