@@ -118,7 +118,7 @@ endif
 ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700))
 	cp ./workspace/all/bootlogo/build/$(PLATFORM)/bootlogo.elf ./build/EXTRAS/Tools/$(PLATFORM)/Bootlogo.pak/
 endif
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355))
+ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 rk3326 my355))
 	# Audio resampling
 	cp ./workspace/all/minarch/build/$(PLATFORM)/libsamplerate.* ./build/SYSTEM/$(PLATFORM)/lib/
 
@@ -132,7 +132,7 @@ ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355))
 	cp ./workspace/all/minarch/build/$(PLATFORM)/libchdr.so.* ./build/SYSTEM/$(PLATFORM)/lib/
 	cp ./workspace/all/minarch/build/$(PLATFORM)/libcrypto.so.* ./build/SYSTEM/$(PLATFORM)/lib/
 
-ifneq (,$(filter $(PLATFORM),tg5040 h700))
+ifneq (,$(filter $(PLATFORM),tg5040 h700 rk3326))
 	# liblz4 for Rewind support
 	cp -L ./workspace/all/minarch/build/$(PLATFORM)/liblz4.so.1 ./build/SYSTEM/$(PLATFORM)/lib/
 endif

@@ -166,7 +166,7 @@ void MenuItem::initSelection()
                     }
                     else
                     {
-                        LOG_warn("Cant initialize selection for %s from unknown type %s\n", this->getLabel(), v.type().name());
+                        LOG_warn("Cant initialize selection for %s from unknown type %s\n", this->getLabel().c_str(), v.type().name());
                         // assert(false);
                     }
                 }
@@ -174,7 +174,7 @@ void MenuItem::initSelection()
             catch (...)
             {
                 // bad any cast
-                LOG_warn("Bad any cast for %s\n", this->getLabel());
+                LOG_warn("Bad any cast for %s\n", this->getLabel().c_str());
             }
             // this sadly doesnt work with std::any
             // auto it = std::find(values.cbegin(), values.cend(), on_get());

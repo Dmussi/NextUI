@@ -28,7 +28,7 @@ SOURCE = $(TARGET).c ma_cheats.c ma_rewind.c ma_audio.c ma_input.c \
          ../common/notification.c ../../$(PLATFORM)/platform/platform.c
 
 # RA support
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 desktop))
+ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 rk3326 my355 desktop))
 # RA source files
 SOURCE += ../common/http.c ../common/ra_badges.c ../common/ra_offline.c ../common/ra_sync.c ../common/ra_event_queue.c ra_integration.c chd_reader.c
 endif
@@ -66,7 +66,7 @@ LDFLAGS +=  -lasound
 endif
 
 # RA support: rcheevos and libchdr linking
-ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355 desktop))
+ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 rk3326 my355 desktop))
 LDFLAGS += -lrcheevos -lchdr -lcrypto
 CFLAGS += -DRC_CLIENT_SUPPORTS_HASH -DHAS_CHEEVOS -DHAS_CHDR
 ifeq ($(PLATFORM), desktop)
@@ -98,7 +98,7 @@ ifeq ($(PLATFORM), desktop)
 all: clean libretro-common rcheevos libchdr $(PREFIX_LOCAL)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
-else ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 my355))
+else ifneq (,$(filter $(PLATFORM),tg5040 tg5050 h700 rk3326 my355))
 # Platforms with RA support
 all: clean libretro-common libsrm.a rcheevos libchdr $(PREFIX_LOCAL)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
@@ -112,7 +112,7 @@ ifeq ($(PLATFORM), my355)
 endif
 	cp -L $(PREFIX)/lib/libsamplerate.so.0 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libzip.so.5 build/$(PLATFORM)
-	cp -L $(PREFIX)/lib/libbz2.so.1.0 build/$(PLATFORM)
+	cp -L $(PREFIX)/lib/libbz2.so.1$(if $(filter rk3326,$(PLATFORM)),,.0) build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/liblzma.so.5 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/libzstd.so.1 build/$(PLATFORM)
 	cp -L $(PREFIX)/lib/liblz4.so.1 build/$(PLATFORM)
@@ -120,8 +120,12 @@ endif
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 endif
 
+# Pinned: libretro-common after mid-July 2026 pulls deflate/rstrtod into the
+# objects libsrm uses, which this makefile does not build.
+LIBRETRO_COMMON_PIN = 48930e4b
 libretro-common:
 	git clone https://github.com/libretro/libretro-common
+	cd libretro-common && (git checkout -q $(LIBRETRO_COMMON_PIN) 2>/dev/null || (git fetch -q --unshallow && git checkout -q $(LIBRETRO_COMMON_PIN)))
 
 rcheevos: rcheevos/makefile $(PREFIX_LOCAL)/lib/librcheevos.a
 

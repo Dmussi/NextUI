@@ -1,0 +1,25 @@
+# NextUI button map for the Powkiddy V10 (read at start-up).
+# One NAME=code per line, codes as reported by evtest; -1 = no such button.
+# These are the defaults already built in - edit only if a button misbehaves.
+UP=544
+DOWN=545
+LEFT=546
+RIGHT=547
+A=305
+B=304
+X=307
+Y=308
+L1=310
+R1=311
+L2=706
+R2=707
+SELECT=704
+START=709
+# The V10 has no MENU button: SELECT+START together act as MENU.
+MENU=-1
+# Volume buttons
+PLUS=708
+MINUS=705
+POWER=116
+# Held with the volume buttons to change brightness instead of volume.
+HOTKEY=709
