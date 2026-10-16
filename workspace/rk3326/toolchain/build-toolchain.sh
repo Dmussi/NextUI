@@ -41,7 +41,7 @@ compile_only=0
 has_out=0
 for a in "\$@"; do
 	case "\$a" in
-		-mcpu=*|-mtune=*|-march=*|-flto|-Wl,--no-as-needed|-Wl,--as-needed) ;;
+		-mcpu=*|-mtune=*|-march=*|-flto|-Wl,--no-as-needed|-Wl,--as-needed|-Wl,-map,*|-Wl,-Map,*|-Wl,-Map=*|-Wl,--Map=*) ;;
 		-Wl,-no-undefined|-Wl,--no-undefined) args+=("-Wl,-z,defs") ;;
 		-c) compile_only=1; args+=("\$a") ;;
 		-o) has_out=1; args+=("\$a") ;;
