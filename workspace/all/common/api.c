@@ -3217,6 +3217,7 @@ void SND_init(double sample_rate, double frame_rate)
 		LOG_info("- %s\n", SDL_GetAudioDriver(i));
 	}
 	LOG_info("Current audio driver: %s\n", SDL_GetCurrentAudioDriver());
+	LOG_info("AUDIODEV: %s\n", SDL_getenv("AUDIODEV") ? SDL_getenv("AUDIODEV") : "(unset)");
 
 	LOG_info("Available audio devices:\n");
 	for (int i = 0; i < SDL_GetNumAudioDevices(0); i++)

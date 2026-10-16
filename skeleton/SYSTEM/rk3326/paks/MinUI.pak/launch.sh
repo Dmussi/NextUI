@@ -95,6 +95,7 @@ EXEC_PATH="/tmp/nextui_exec"
 NEXT_PATH="/tmp/next"
 rm -f /tmp/poweroff /tmp/reboot
 touch "$EXEC_PATH" && sync
+rk_start_audio_monitor
 while [ -f "$EXEC_PATH" ]; do
 	echo "launch: starting nextui.elf $(date)" >> "$LAUNCH_LOG"
 	nextui.elf > "$LOGS_PATH/nextui.txt" 2>&1

@@ -23,6 +23,10 @@ rk_mount_sdcard() {
 rk_setup_runtime() {
 	export SDL_VIDEODRIVER="KMSDRM"
 	export SDL_AUDIODRIVER="alsa"
+	# Without ArkOS's per-user ALSA setup, "default" plays silence on the
+	# rk817; the plug device on card 0 is what the sound test proved works.
+	export NEXTUI_ALSA_DEVICE="${NEXTUI_ALSA_DEVICE:-plughw:0,0}"
+	export AUDIODEV="$NEXTUI_ALSA_DEVICE"
 	export SDL_VIDEO_EGL_DRIVER="libEGL.so"
 	export SDL_JOYSTICK_DISABLE_UDEV=0
 	if [ "$NEXTUI_BUNDLED_SDL" = "1" ]; then
@@ -111,4 +115,28 @@ rk_setup_audio() {
 		echo "-- amixer"; amixer -c 0 2>&1
 		echo "-- who holds the sound device"; fuser -v /dev/snd/* 2>&1
 	} > "$LOGS_PATH/audio.txt" 2>&1
+}
+
+# Requires LOGS_PATH. While NextUI runs, record the codec's live state every
+# 5 s (mixer + what the PCM stream is actually doing) to audio-live.txt.
+rk_start_audio_monitor() {
+	(
+		out="$LOGS_PATH/audio-live.txt"
+		: > "$out"
+		while [ -f /tmp/nextui_exec ]; do
+			{
+				echo "== $(date +%T)"
+				amixer -c 0 sget Playback 2>&1 | grep -E 'Front Left|Mono'
+				amixer -c 0 sget 'Playback Path' 2>&1 | grep Item0
+				for f in /proc/asound/card0/pcm0p/sub0/status /proc/asound/card0/pcm0p/sub0/hw_params; do
+					echo "-- $f"; cat "$f" 2>&1
+				done
+			} >> "$out"
+			# keep the file small
+			if [ "$(wc -l < "$out")" -gt 600 ]; then
+				tail -n 300 "$out" > "$out.tmp" && mv "$out.tmp" "$out"
+			fi
+			sleep 5
+		done
+	) > /dev/null 2>&1 &
 }

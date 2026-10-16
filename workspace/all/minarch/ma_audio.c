@@ -20,8 +20,11 @@ void Audio_onSinkChanged(int device, int watch_event) {
 	// FIXME: This shouldnt be necessary, alsa should just read .asoundrc for the changed default device.
 	if (device == AUDIO_SINK_BLUETOOTH)
 		SDL_setenv("AUDIODEV", "bluealsa", 1);
-	else
-		SDL_setenv("AUDIODEV", "default", 1);
+	else {
+		// a platform launcher may pin the speaker device (NEXTUI_ALSA_DEVICE)
+		const char *dev = SDL_getenv("NEXTUI_ALSA_DEVICE");
+		SDL_setenv("AUDIODEV", (dev && dev[0]) ? dev : "default", 1);
+	}
 }
 
 void Audio_checkAndResetIfNeeded(void) {
