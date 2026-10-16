@@ -34,6 +34,7 @@ double panel_fps = 60.0;
 static int wake_fd = -1;
 
 #define RK_POWER_SUPPLY "/sys/class/power_supply"
+#define RK_AUDIO_RATE 48000
 #define RK_INPUT_COUNT 8
 #define EV_KEY 0x01
 #define EV_ABS 0x03
@@ -737,10 +738,12 @@ int PLAT_pickSampleRate(int requested, int max) {
 	// bluetooth: allow limiting the maximum to improve compatibility
 	// NOTE: called from SND_init before InitSettings, so msettings shared
 	// memory (GetAudioSink) must not be touched here
-	if(PLAT_bluetoothConnected())
-		return MIN(requested, CFG_getBluetoothSamplingrateLimit());
-
-	return MIN(requested, max);
+	(void)requested;
+	(void)max;
+	// The rk817 codec accepts odd rates such as the GBA's 32768 Hz without an
+	// error but plays silence, so the device always runs at 48 kHz and
+	// NextUI's resampler converts each core's rate to it.
+	return RK_AUDIO_RATE;
 }
 
 void PLAT_overrideMute(int mute) {
