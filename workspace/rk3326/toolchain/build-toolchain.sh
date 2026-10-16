@@ -51,7 +51,7 @@ for a in "\$@"; do
 done
 ZIGCC=("$ZIG" $lang -target $TRIPLE.$GLIBC -mcpu=cortex_a35)
 # behave like a sysroot'd cross gcc: search the toolchain prefix by default
-TAIL=(-idirafter "$PREFIX/include" -L"$PREFIX/lib" -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=tautological-constant-out-of-range-compare -Wno-error=pointer-bool-conversion)
+TAIL=(-idirafter "$PREFIX/include" -L"$PREFIX/lib" -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=tautological-constant-out-of-range-compare -Wno-error=pointer-bool-conversion -Wno-date-time)
 # gcc compiles every source with "-c a.c b.c"; zig only does one, so split
 if [ \$compile_only = 1 ] && [ \$has_out = 0 ] && [ \${#srcs[@]} -gt 1 ]; then
 	for src in "\${srcs[@]}"; do
