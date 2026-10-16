@@ -72,6 +72,7 @@ find "$SYS" "$CARD/Tools" -type f \( -name '*.elf' -o -name '*.so' -o -name '*.s
 
 # ports entry + version
 cp "$W/$P/install/NextUI.sh" "$STAGE/ports/NextUI.sh"
+cp "$W/$P/install/NextUI Sound Test.sh" "$STAGE/ports/"
 printf '%s\n%s\n' "$NAME" "$(git -C "$REPO" rev-parse --short HEAD)" > "$CARD/.system/version.txt"
 cp "$W/$P/install/README-V10.txt" "$STAGE/README-V10.txt"
 

@@ -21,10 +21,12 @@ export HOOKS_PATH="$USERDATA_PATH/.hooks"
 export HOME="$USERDATA_PATH"
 LAUNCH_LOG="$LOGS_PATH/launch.txt"
 
-# ArkOS's own SDL2/GPU libraries come from the system paths; the bundled
-# lib folder supplies the rest (libmsettings, libsamplerate, libzip, ...).
+# ArkOS's own libraries come first: they are newer than the bundled copies
+# (which ArkOS's own tools such as systemctl and timedatectl cannot use).
+# The bundled lib folder only fills in what ArkOS lacks (libmsettings,
+# libchdr, ...).
 export PATH="$SYSTEM_PATH/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-export LD_LIBRARY_PATH="$SYSTEM_PATH/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:$SYSTEM_PATH/lib"
 rk_setup_runtime
 
 #######################################

@@ -256,13 +256,14 @@ void SetHDMI(int value) { (void)value; }
 
 ///////// Platform specific scaling
 
-// The rk817 'Playback' control is in dB steps (0-237, about 0.5 dB each), so
-// raw percentages are far too quiet below ~80%. SetRawVolume uses amixer's
-// perceptual mapping (-M) instead, which spreads 0-100 over the dB range.
+// The rk817 'Playback' control (raw 0-237) is in dB steps of about 0.32 dB;
+// ArkOS's default is raw 183. amixer's percent and -M mappings both misbehave
+// on it (-M wrote 245, past the control's maximum), so SetRawVolume writes a
+// clamped raw value: NextUI 1..20 -> raw 128..237, 0 -> 0.
 int scaleVolume(int value) {
 	if (value <= 0) return 0;
 	if (value > 20) value = 20;
-	return value * 5; // 5% .. 100% (mapped)
+	return value * 5; // 5 .. 100
 }
 
 int scaleBrightness(int value) {
@@ -300,12 +301,19 @@ void SetRawBrightness(int val) { // 0 - 255
 }
 void SetRawColortemp(int val) { (void)val; }
 
+#define PLAYBACK_RAW_MAX 237
+#define PLAYBACK_RAW_LOW 123
 void SetRawVolume(int val) { // in: 0-100
+	int raw = 0;
+	if (val > 0) {
+		if (val > 100) val = 100;
+		raw = PLAYBACK_RAW_LOW + (val * (PLAYBACK_RAW_MAX - PLAYBACK_RAW_LOW)) / 100;
+	}
 	char cmd[128];
-	snprintf(cmd, sizeof(cmd), "amixer -q -M -c 0 sset '" MIXER_CONTROL "' %d%% >/dev/null 2>&1", val);
+	snprintf(cmd, sizeof(cmd), "amixer -q -c 0 sset '" MIXER_CONTROL "' %d >/dev/null 2>&1", raw);
 	if (system(cmd) != 0) {
 		// the control name differs on some kernels; fall back to the card's master
-		snprintf(cmd, sizeof(cmd), "amixer -q -M -c 0 sset Master %d%% >/dev/null 2>&1", val);
+		snprintf(cmd, sizeof(cmd), "amixer -q -c 0 sset Master %d%% >/dev/null 2>&1", val);
 		if (system(cmd) != 0) { /* nothing else to try */ }
 	}
 }
