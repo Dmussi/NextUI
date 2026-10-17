@@ -13,21 +13,28 @@ echo /sbin/mdev > /proc/sys/kernel/hotplug 2>/dev/null
 hostname -F /etc/hostname
 
 LOG=/tmp/boot.log
+# segfaults: let the kernel log the faulting program, address and registers
+echo 1 > /proc/sys/debug/exception-trace 2>/dev/null
+t() { echo "rcS: $1 $(cut -d' ' -f1 /proc/uptime)"; }
 {
 	echo "rcS: $(cat /proc/uptime)"
 	# clock from the rk817 RTC
+	t hwclock
 	hwclock -s -u 2>&1
+	t timezone
 	# time zone saved by NextUI's settings
 	TZFILE=/mnt/SDCARD/.userdata/rk3326/timezone
 	TZNAME=$(cat "$TZFILE" 2>/dev/null)
 	[ -f "/usr/share/zoneinfo/$TZNAME" ] || TZNAME=UTC
 	cp "/usr/share/zoneinfo/$TZNAME" /tmp/localtime
 	echo "$TZNAME" > /tmp/timezone
+	t zram
 	# compressed swap in RAM, as dArkOS does
 	if [ -b /dev/zram0 ] || modprobe zram 2>/dev/null; then
 		echo lz4 > /sys/block/zram0/comp_algorithm 2>/dev/null
 		echo 256M > /sys/block/zram0/disksize 2>/dev/null && mkswap /dev/zram0 >/dev/null 2>&1 && swapon /dev/zram0 2>/dev/null
 	fi
+	t audio
 	# speaker on, then follow the headphone jack
 	amixer -q -c 0 sset 'Playback Path' SPK
 	amixer --hp-watch > /dev/null 2>&1 &

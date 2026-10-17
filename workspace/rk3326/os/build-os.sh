@@ -26,6 +26,7 @@ VERSION="$(date +%Y%m%d)-$HASH"
 NAME="NextUI-OS-V10-$VERSION"
 BOOT_MB=256
 BUSYBOX_TAG=1_36_1
+PREFIX_TC="${RK3326_TOOLCHAIN:-/opt/rk3326}"
 
 rm -rf "$WORK"
 mkdir -p "$WORK" "$OUT"
@@ -68,6 +69,8 @@ if [ ! -x "$TOOLS/busybox" ]; then
 	)
 fi
 "${CC_MUSL[@]}" -static -Os -Wall -o "$TOOLS/amixer" "$HERE/tools/amixer.c"
+# crash reporter (glibc, preloaded into NextUI's programs)
+"$PREFIX_TC/bin/aarch64-linux-gnu-gcc" -shared -fPIC -O1 -g -o "$TOOLS/nextui-crashlog.so" "$HERE/tools/crashlog.c"
 
 #######################################
 echo "== system image (squashfs)"
@@ -90,6 +93,7 @@ qemu-aarch64-static "$TOOLS/busybox" --list-full | while read -r app; do
 	ln -s /bin/busybox "$R/$app"
 done
 install -m 755 "$TOOLS/amixer" "$R/usr/bin/amixer"
+install -m 755 "$TOOLS/nextui-crashlog.so" "$R/usr/lib/nextui-crashlog.so"
 
 # dArkOS's C library, GPU driver (libmali), SDL2 (which rotates the portrait
 # panel), ALSA and everything NextUI's programs and cores link against

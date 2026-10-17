@@ -3,8 +3,9 @@
 # A crash restarts NextUI; three crashes in a row power off.
 export PATH=/mnt/SDCARD/.system/rk3326/bin:/bin:/sbin:/usr/bin:/usr/sbin
 export HOME=/tmp
-export SDL_JOYSTICK_DISABLE_UDEV=1
 export NEXTUI_OS=1
+# test builds: log a backtrace when a program crashes
+export LD_PRELOAD=/usr/lib/nextui-crashlog.so
 LAUNCHER=/mnt/SDCARD/.system/rk3326/paks/MinUI.pak/launch.sh
 LOG=/tmp/boot.log
 echo "nextui: start $(cat /proc/uptime)" >> $LOG
@@ -19,6 +20,12 @@ while :; do
 	start=$(cut -d. -f1 /proc/uptime)
 	sh "$LAUNCHER" >> $LOG 2>&1
 	echo "nextui: launcher exited $? $(cat /proc/uptime)" >> $LOG
+	# keep the kernel log and this boot log on the card
+	LOGS=/mnt/SDCARD/.userdata/rk3326/logs
+	mkdir -p $LOGS
+	dmesg > $LOGS/dmesg.txt 2>&1
+	cp $LOG $LOGS/boot.txt
+	sync
 	[ -f /tmp/reboot ] && { reboot; exit 0; }
 	[ -f /tmp/poweroff ] && break
 	now=$(cut -d. -f1 /proc/uptime)

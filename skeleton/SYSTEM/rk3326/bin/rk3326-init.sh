@@ -120,7 +120,7 @@ rk_setup_audio() {
 		echo "-- aplay -l"; aplay -l 2>&1
 		echo "-- aplay -L"; aplay -L 2>&1 | head -40
 		echo "-- amixer"; amixer -c 0 2>&1
-		echo "-- who holds the sound device"; fuser -v /dev/snd/* 2>&1
+		echo "-- who holds the sound device"; fuser /dev/snd/* 2>&1
 	} > "$LOGS_PATH/audio.txt" 2>&1
 }
 
