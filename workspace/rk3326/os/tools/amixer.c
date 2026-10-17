@@ -5,7 +5,7 @@
 //   amixer [-q] [-c N] sset  NAME VALUE    VALUE: number, N% or enum item
 //   amixer [-q] [-c N] sget  NAME
 //   amixer [-c N]                          list controls with their values
-//   amixer --hp-watch                      daemon: route audio to the
+//   amixer [--invert] --hp-watch                      daemon: route audio to the
 //                                          headphones while they are plugged
 //                                          in, to the speaker otherwise
 //
@@ -192,6 +192,8 @@ static void route(int card, int headphones) {
 	close(fd);
 }
 
+static int hp_invert = 0;
+
 static int hp_watch(int card) {
 	int fd = -1;
 	for (int tries = 0; fd < 0 && tries < 20; tries++) {
@@ -203,10 +205,13 @@ static int hp_watch(int card) {
 	memset(sw, 0, sizeof(sw));
 	ioctl(fd, EVIOCGSW(sizeof(sw)), sw);
 	int in = (sw[SW_HEADPHONE_INSERT / (8 * sizeof(long))] >> (SW_HEADPHONE_INSERT % (8 * sizeof(long)))) & 1;
-	route(card, in);
+	fprintf(stderr, "hp-watch: start, jack switch=%d invert=%d -> %s\n", in, hp_invert, (in ^ hp_invert) ? "HP" : "SPK");
+	route(card, in ^ hp_invert);
 	struct input_event ev;
 	while (read(fd, &ev, sizeof(ev)) == sizeof(ev)) {
-		if (ev.type == EV_SW && ev.code == SW_HEADPHONE_INSERT) route(card, ev.value);
+		if (ev.type != EV_SW) continue;
+		fprintf(stderr, "hp-watch: %ld.%06ld switch code=%d value=%d\n", (long)ev.time.tv_sec, (long)ev.time.tv_usec, ev.code, ev.value);
+		if (ev.code == SW_HEADPHONE_INSERT) route(card, ev.value ^ hp_invert);
 	}
 	return 0;
 }
@@ -220,6 +225,7 @@ int main(int argc, char **argv) {
 		if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--quiet")) quiet = 1;
 		else if (!strcmp(argv[i], "-c") && i + 1 < argc) card = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-M") || !strcmp(argv[i], "-R")) {}
+		else if (!strcmp(argv[i], "--invert")) hp_invert = 1;
 		else if (!strcmp(argv[i], "--hp-watch")) return hp_watch(card);
 		else { fprintf(stderr, "amixer: unknown option %s\n", argv[i]); return 1; }
 	}

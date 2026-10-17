@@ -25,6 +25,7 @@ while :; do
 	mkdir -p $LOGS
 	dmesg > $LOGS/dmesg.txt 2>&1
 	cp $LOG $LOGS/boot.txt
+	cp /tmp/hp.log $LOGS/headphones.txt 2>/dev/null
 	sync
 	[ -f /tmp/reboot ] && { reboot; exit 0; }
 	[ -f /tmp/poweroff ] && break

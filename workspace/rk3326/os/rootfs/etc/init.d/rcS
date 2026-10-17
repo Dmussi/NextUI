@@ -29,8 +29,17 @@ t() { echo "rcS: $1 $(cut -d' ' -f1 /proc/uptime)"; }
 	cp "/usr/share/zoneinfo/$TZNAME" /tmp/localtime
 	echo "$TZNAME" > /tmp/timezone
 	t audio
-	# speaker on, as dArkOS's audiopath service does. (The V10's jack switch
-	# reads "plugged in" with nothing plugged in, so it is not followed.)
+	# speaker on, then follow the headphone jack. The V10's jack switch reads
+	# "plugged in" with nothing plugged in, so its meaning is inverted.
 	amixer -q -c 0 sset 'Playback Path' SPK
+	amixer --invert --hp-watch >> /tmp/hp.log 2>&1 &
+	# memory clock changes stall the bus and make the sound crackle: keep
+	# the memory controller at full speed (as ArkOS-style systems do)
+	for d in /sys/class/devfreq/dmc; do
+		echo "dmc: $(cat $d/governor 2>/dev/null) $(cat $d/cur_freq 2>/dev/null) avail: $(cat $d/available_governors 2>/dev/null)"
+		echo performance > $d/governor 2>/dev/null
+		echo "dmc now: $(cat $d/governor 2>/dev/null) $(cat $d/cur_freq 2>/dev/null)"
+	done
+	echo "cpu governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null) avail: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null)"
 	echo "rcS: done $(cat /proc/uptime)"
 } >> $LOG 2>&1
