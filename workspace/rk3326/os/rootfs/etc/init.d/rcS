@@ -29,8 +29,8 @@ t() { echo "rcS: $1 $(cut -d' ' -f1 /proc/uptime)"; }
 	cp "/usr/share/zoneinfo/$TZNAME" /tmp/localtime
 	echo "$TZNAME" > /tmp/timezone
 	t audio
-	# speaker on, then follow the headphone jack
+	# speaker on, as dArkOS's audiopath service does. (The V10's jack switch
+	# reads "plugged in" with nothing plugged in, so it is not followed.)
 	amixer -q -c 0 sset 'Playback Path' SPK
-	amixer --hp-watch > /dev/null 2>&1 &
 	echo "rcS: done $(cat /proc/uptime)"
 } >> $LOG 2>&1
