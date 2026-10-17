@@ -1,0 +1,30 @@
+#!/bin/sh
+# NextUI OS: run NextUI; power off (or reboot) when it asks to.
+# A crash restarts NextUI; three crashes in a row power off.
+export PATH=/mnt/SDCARD/.system/rk3326/bin:/bin:/sbin:/usr/bin:/usr/sbin
+export HOME=/tmp
+export SDL_JOYSTICK_DISABLE_UDEV=1
+export NEXTUI_OS=1
+LAUNCHER=/mnt/SDCARD/.system/rk3326/paks/MinUI.pak/launch.sh
+LOG=/tmp/boot.log
+echo "nextui: start $(cat /proc/uptime)" >> $LOG
+
+crashes=0
+while :; do
+	rm -f /tmp/poweroff /tmp/reboot
+	if [ ! -f "$LAUNCHER" ]; then
+		printf '\033[2J\033[H\n\n  NextUI is missing from the SD card.\n\n  Delete the .system folder on the NEXTUI\n  drive and start again to reinstall it.\n' > /dev/tty1
+		sleep 30; break
+	fi
+	start=$(cut -d. -f1 /proc/uptime)
+	sh "$LAUNCHER" >> $LOG 2>&1
+	echo "nextui: launcher exited $? $(cat /proc/uptime)" >> $LOG
+	[ -f /tmp/reboot ] && { reboot; exit 0; }
+	[ -f /tmp/poweroff ] && break
+	now=$(cut -d. -f1 /proc/uptime)
+	if [ $((now - start)) -lt 30 ]; then crashes=$((crashes + 1)); else crashes=1; fi
+	[ $crashes -ge 3 ] && break
+	sleep 1
+done
+printf '\033[2J\033[H' > /dev/tty1
+poweroff

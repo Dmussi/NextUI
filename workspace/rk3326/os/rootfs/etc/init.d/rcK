@@ -1,0 +1,10 @@
+#!/bin/sh
+# NextUI OS: shutdown
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+hwclock -w -u 2>/dev/null
+cp /tmp/boot.log /mnt/SDCARD/.userdata/rk3326/logs/boot.txt 2>/dev/null
+sync
+swapoff -a 2>/dev/null
+umount /mnt/SDCARD 2>/dev/null || mount -o remount,ro /mnt/SDCARD
+mount -o remount,ro /boot 2>/dev/null
+sync

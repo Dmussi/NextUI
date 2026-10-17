@@ -1,0 +1,108 @@
+#!/bin/busybox sh
+# NextUI OS for the Powkiddy V10 - early boot (runs from uInitrd).
+#
+# Card layout:
+#   (first 16 MB)  bootloader, taken unchanged from dArkOS
+#   partition 1    NEXTUI_BOOT (FAT32): kernel, device tree, this initrd,
+#                  nextui-os.squashfs (the system) and nextui-card.zip
+#   partition 2    NEXTUI (FAT32): games, saves, NextUI itself. Created on
+#                  the first boot to fill the rest of the card.
+#
+# Mounts the system image read-only and hands over to its /sbin/init.
+
+/bin/busybox --install -s /bin
+export PATH=/bin
+mkdir -p /proc /sys /dev /boot /sdcard /newroot /tmp
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+mount -t tmpfs tmpfs /tmp
+
+TTY=/dev/tty1
+say() { printf '\033[2J\033[H\n\n  %s\n' "$*" > $TTY 2>/dev/null; }
+fail() {
+	say "NextUI OS could not start:
+  $*
+
+  Power off and check the SD card."
+	echo "init: $*" > /dev/kmsg
+	sleep 30
+	poweroff -f
+}
+
+# the disk that holds the NEXTUI_BOOT partition
+BOOTPART=""
+for _ in $(seq 50); do
+	BOOTPART=$(blkid | sed -n 's/^\([^:]*\):.*LABEL="NEXTUI_BOOT".*/\1/p' | head -1)
+	[ -n "$BOOTPART" ] && break
+	sleep 0.1
+done
+[ -n "$BOOTPART" ] || fail "boot partition not found"
+PARTNAME=${BOOTPART#/dev/}
+case "$PARTNAME" in
+	*p1) DISKNAME=${PARTNAME%p1} ;;
+	*) DISKNAME=${PARTNAME%1} ;;
+esac
+DISK=/dev/$DISKNAME
+DATAPART=${BOOTPART%1}2
+
+#######################################
+# first boot: make the NEXTUI partition from the free space
+
+le32() {
+	v=$1
+	printf "\\$(printf %03o $((v & 255)))\\$(printf %03o $(((v >> 8) & 255)))\\$(printf %03o $(((v >> 16) & 255)))\\$(printf %03o $(((v >> 24) & 255)))"
+}
+
+if [ ! -b "$DATAPART" ]; then
+	say "Setting up NextUI (first start).
+
+  This takes about a minute.
+  Do not turn the V10 off."
+	S=/sys/block/$DISKNAME
+	TOTAL=$(cat $S/size)
+	P1START=$(cat $S/${DISKNAME}p1/start)
+	P1SIZE=$(cat $S/${DISKNAME}p1/size)
+	START=$(( (P1START + P1SIZE + 2047) / 2048 * 2048 ))
+	SIZE=$(( (TOTAL - START) / 2048 * 2048 ))
+	[ "$SIZE" -gt 262144 ] || fail "SD card too small"
+	# partition table entry 2: not bootable, FAT32 (LBA), start, size
+	dd if=$DISK of=/tmp/mbr bs=512 count=1 2>/dev/null || fail "cannot read the SD card"
+	{ printf '\000\376\377\377\014\376\377\377'; le32 $START; le32 $SIZE; } > /tmp/entry
+	dd if=/tmp/entry of=/tmp/mbr bs=1 seek=462 conv=notrunc 2>/dev/null
+	dd if=/tmp/mbr of=$DISK bs=512 count=1 conv=fsync 2>/dev/null || fail "cannot write the SD card"
+	sync
+	blockdev --rereadpt $DISK
+	for _ in $(seq 50); do [ -b "$DATAPART" ] && break; sleep 0.1; done
+	[ -b "$DATAPART" ] || fail "new partition did not appear"
+	mkdosfs -n NEXTUI "$DATAPART" > /dev/null || fail "cannot format the NEXTUI partition"
+	NEW_CARD=1
+fi
+
+#######################################
+
+mount -t vfat -o ro,noatime "$BOOTPART" /boot || fail "cannot mount the boot partition"
+mount -t vfat -o rw,noatime,utf8,shortname=mixed,errors=remount-ro,flush "$DATAPART" /sdcard \
+	|| { fsck.vfat -a "$DATAPART" 2>/dev/null; mount -t vfat -o rw,noatime,utf8,shortname=mixed "$DATAPART" /sdcard; } \
+	|| fail "cannot mount the NEXTUI partition"
+
+# put NextUI on the card (first boot, or after the .system folder was deleted)
+if [ "$NEW_CARD" = 1 ] || [ ! -d /sdcard/.system/rk3326 ]; then
+	say "Installing NextUI on the SD card...
+
+  Do not turn the V10 off."
+	unzip -o -q /boot/nextui-card.zip -d /sdcard || fail "cannot copy NextUI to the SD card"
+	sync
+fi
+
+[ -f /boot/nextui-os.squashfs ] || fail "nextui-os.squashfs is missing"
+mount -t squashfs -o loop,ro /boot/nextui-os.squashfs /newroot || fail "cannot mount nextui-os.squashfs"
+
+printf '\033[2J\033[H' > $TTY 2>/dev/null
+mount --move /boot /newroot/boot
+mount --move /sdcard /newroot/mnt/SDCARD
+mount --move /dev /newroot/dev
+umount /tmp
+umount /sys
+umount /proc
+exec switch_root /newroot /sbin/init

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Tiny stand-in for systemd's timedatectl (what NextUI's settings use).
+TZFILE=/mnt/SDCARD/.userdata/rk3326/timezone
+case "$1 $2 $3" in
+	"show -p Timezone") cat /tmp/timezone 2>/dev/null || echo UTC ;;
+	"show -p NTP") echo no ;;
+	set-timezone*)
+		[ -f "/usr/share/zoneinfo/$2" ] || { echo "unknown time zone $2" >&2; exit 1; }
+		cp "/usr/share/zoneinfo/$2" /tmp/localtime
+		echo "$2" > /tmp/timezone
+		mkdir -p "$(dirname "$TZFILE")"; echo "$2" > "$TZFILE"; sync ;;
+	set-ntp*) : ;;
+	*) echo "Time zone: $(cat /tmp/timezone 2>/dev/null)"; date ;;
+esac

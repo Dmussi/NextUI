@@ -1,0 +1,4 @@
+NAME="NextUI OS"
+PRETTY_NAME="NextUI OS (V10)"
+ID=nextui-os
+VERSION_ID=@VERSION@

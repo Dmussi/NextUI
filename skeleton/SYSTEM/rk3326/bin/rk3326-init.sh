@@ -28,7 +28,8 @@ rk_setup_runtime() {
 	export NEXTUI_ALSA_DEVICE="${NEXTUI_ALSA_DEVICE:-plughw:0,0}"
 	export AUDIODEV="$NEXTUI_ALSA_DEVICE"
 	export SDL_VIDEO_EGL_DRIVER="libEGL.so"
-	export SDL_JOYSTICK_DISABLE_UDEV=0
+	# NextUI OS has no udev daemon: SDL must scan /dev/input itself
+	export SDL_JOYSTICK_DISABLE_UDEV="${SDL_JOYSTICK_DISABLE_UDEV:-0}"
 	if [ "$NEXTUI_BUNDLED_SDL" = "1" ]; then
 		export LD_LIBRARY_PATH="$SYSTEM_PATH/lib/sdl:$LD_LIBRARY_PATH"
 	fi
