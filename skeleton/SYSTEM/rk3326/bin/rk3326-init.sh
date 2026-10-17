@@ -146,3 +146,14 @@ rk_start_audio_monitor() {
 		done
 	) > /dev/null 2>&1 &
 }
+
+# Keep the installed boot front end (boot mode only) in step with this
+# NextUI version, so updating the card also updates it.
+rk_refresh_frontend() {
+	installed=/usr/local/bin/nextui-frontend.sh
+	[ -f "$installed" ] || return 0
+	if ! cmp -s "$SYSTEM_PATH/bin/nextui-frontend.sh" "$installed"; then
+		install -m 755 "$SYSTEM_PATH/bin/nextui-frontend.sh" "$installed" 2>/dev/null \
+			&& echo "launch: updated $installed" >> "$LAUNCH_LOG"
+	fi
+}

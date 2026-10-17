@@ -40,6 +40,7 @@ log_runtime_state
 #######################################
 
 rk_prepare_arkos
+rk_refresh_frontend
 rk_setup_audio
 rk_link_arkos_roms
 

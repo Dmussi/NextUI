@@ -71,8 +71,8 @@ find "$SYS" "$CARD/Tools" -type f \( -name '*.elf' -o -name '*.so' -o -name '*.s
 	xargs -0 -n1 patchelf --remove-rpath
 
 # ports entry + version
-cp "$W/$P/install/NextUI.sh" "$STAGE/ports/NextUI.sh"
-cp "$W/$P/install/NextUI Sound Test.sh" "$STAGE/ports/"
+# every script in install/ is a Ports entry (NextUI, boot on/off, sound test)
+cp "$W/$P/install/"*.sh "$STAGE/ports/"
 printf '%s\n%s\n' "$NAME" "$(git -C "$REPO" rev-parse --short HEAD)" > "$CARD/.system/version.txt"
 cp "$W/$P/install/README-V10.txt" "$STAGE/README-V10.txt"
 

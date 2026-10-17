@@ -2,9 +2,10 @@
 # NextUI for the Powkiddy V10 - ArkOS Ports entry.
 # Lives in /roms/ports/; NextUI itself lives in /roms/nextui/.
 #
-# Power off inside NextUI returns to ArkOS (EmulationStation) by default,
-# which keeps testing safe. To make it really power off, create the file
-#   /roms/nextui/.userdata/rk3326/real-poweroff
+# Started from Ports, Power Off inside NextUI returns to ArkOS
+# (EmulationStation); create /roms/nextui/.userdata/rk3326/real-poweroff to
+# make it really power off. Started at boot (nextui-frontend.sh sets
+# NEXTUI_BOOT=1) it always powers off.
 
 NEXTUI_ROOT="/roms/nextui"
 LAUNCHER="$NEXTUI_ROOT/.system/rk3326/paks/MinUI.pak/launch.sh"
@@ -45,12 +46,16 @@ if amixer -c 0 sget 'Playback Path' 2>/dev/null | grep -q "Item0: 'OFF'"; then
 fi
 printf '\033c' > "$TTY" 2>/dev/null
 
+# In boot mode (started by nextui-frontend.sh) Power Off really powers off;
+# from Ports it returns to ArkOS unless the real-poweroff file exists.
 if [ -f /tmp/reboot ]; then
 	rm -f /tmp/reboot
+	touch /run/nextui-shutting-down
 	sync; systemctl reboot
 elif [ -f /tmp/poweroff ]; then
 	rm -f /tmp/poweroff
-	if [ -f "$NEXTUI_ROOT/.userdata/rk3326/real-poweroff" ]; then
+	if [ "$NEXTUI_BOOT" = "1" ] || [ -f "$NEXTUI_ROOT/.userdata/rk3326/real-poweroff" ]; then
+		touch /run/nextui-shutting-down
 		sync; systemctl poweroff
 	fi
 fi

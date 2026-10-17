@@ -8,10 +8,17 @@ INSTALL
 1. Power off the V10 and put its SD card in your computer.
 2. Open the EASYROMS drive.
 3. Copy the "nextui" folder from this zip to the root of EASYROMS.
-4. Copy "NextUI.sh" from this zip's "ports" folder into EASYROMS/ports.
+4. Copy everything in this zip's "ports" folder into EASYROMS/ports.
 5. Put the card back, start the V10, open Ports and choose NextUI.
    (If NextUI does not show in Ports, choose "Update Games List" in the
    EmulationStation start menu first.)
+
+START AT BOOT (optional)
+- Run "NextUI - Start at Boot ON" from Ports: the V10 then starts NextUI
+  when you turn it on, and Power Off in NextUI really powers off.
+- Hold L1 while turning the V10 on to get ArkOS instead.
+- In NextUI, Tools > ArkOS goes back to EmulationStation.
+- "NextUI - Start at Boot OFF" in Ports undoes it.
 
 GAMES
 - Games already in ArkOS's gb, gbc, gba, nes, snes, genesis/megadrive and
