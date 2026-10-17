@@ -134,6 +134,12 @@ cp -a "$WORK/modules/lib/modules/$KVER" "$R/lib/modules/"
 rm -f "$R/lib/modules/$KVER/build" "$R/lib/modules/$KVER/source"
 cp -a /usr/share/zoneinfo "$R/usr/share/zoneinfo"
 
+# licenses
+mkdir -p "$R/usr/share/licenses"
+cp "$HERE/../CREDITS.md" "$R/usr/share/licenses/CREDITS.txt"
+cp "$TOOLS/busybox-src/LICENSE" "$R/usr/share/licenses/BusyBox-LICENSE.txt"
+cp "$REPO/LICENSE" "$R/usr/share/licenses/NextUI-LICENSE.txt"
+
 mksquashfs "$R" "$WORK/nextui-os.squashfs" -comp gzip -all-root -noappend -quiet > /dev/null
 
 #######################################
@@ -151,6 +157,7 @@ CARD="$WORK/card"
 cp -R "$STAGED/nextui" "$CARD"
 rm -rf "$CARD/Tools/rk3326/ArkOS.pak"
 cp "$HERE/README-OS.txt" "$CARD/README-V10.txt"
+cp "$HERE/../CREDITS.md" "$CARD/CREDITS.txt"
 (cd "$CARD" && zip -qr -9 "$WORK/nextui-card.zip" .)
 
 #######################################
@@ -163,6 +170,7 @@ export MTOOLS_SKIP_CHECK=1
 mcopy -i "$B" "$C/boot/Image" "$C/boot/rk3326-odroidgo2-linux-v11.dtb" "$C/boot/logo.bmp" ::/
 mcopy -i "$B" "$HERE/boot/boot.ini" "$WORK/uInitrd" "$WORK/nextui-os.squashfs" "$WORK/nextui-card.zip" ::/
 mcopy -i "$B" "$HERE/README-OS.txt" ::/README.txt
+mcopy -i "$B" "$HERE/../CREDITS.md" ::/CREDITS.txt
 echo "$NAME" > "$WORK/version.txt"; mcopy -i "$B" "$WORK/version.txt" ::/
 
 #######################################

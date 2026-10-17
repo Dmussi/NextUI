@@ -2,8 +2,9 @@ NextUI OS for the Powkiddy V10 - unofficial test build
 ======================================================
 
 A small system that starts NextUI directly, without ArkOS. The bootloader,
-Linux kernel and graphics driver come unchanged from dArkOS; everything
-else is new and much smaller.
+Linux kernel and graphics driver come unchanged from dArkOS
+(https://github.com/christianhaitian/dArkOS); everything else is new and
+much smaller. See CREDITS.txt for everyone whose work this is built on.
 
 INSTALL (use a separate SD card - this erases the card you write it to)
 1. Write NextUI-OS-V10-....img.gz to the SD card with balenaEtcher or

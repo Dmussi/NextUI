@@ -75,10 +75,20 @@ find "$SYS" "$CARD/Tools" -type f \( -name '*.elf' -o -name '*.so' -o -name '*.s
 cp "$W/$P/install/"*.sh "$STAGE/ports/"
 printf '%s\n%s\n' "$NAME" "$(git -C "$REPO" rev-parse --short HEAD)" > "$CARD/.system/version.txt"
 cp "$W/$P/install/README-V10.txt" "$STAGE/README-V10.txt"
+# credits and licenses of everything this port is built from
+cp "$W/$P/CREDITS.md" "$STAGE/CREDITS.txt"
+cp "$W/$P/CREDITS.md" "$CARD/CREDITS.txt"
+mkdir -p "$CARD/.system/licenses"
+cp "$REPO/LICENSE" "$CARD/.system/licenses/NextUI-LICENSE.txt"
+for core in gambatte gpsp fceumm snes9x picodrive pcsx_rearmed; do
+	for f in COPYING Copying LICENSE; do
+		[ -f "$W/$P/cores/src/$core/$f" ] && cp "$W/$P/cores/src/$core/$f" "$CARD/.system/licenses/$core-$f.txt" && break
+	done
+done
 
 # exFAT has no exec bits, but keep them for anyone copying from Linux
 find "$STAGE" -name '*.sh' -exec chmod +x {} +
 find "$STAGE" -name '*.elf' -exec chmod +x {} +
 
-(cd "$STAGE" && rm -f "../$NAME.zip" && zip -qr "../$NAME.zip" nextui ports README-V10.txt)
+(cd "$STAGE" && rm -f "../$NAME.zip" && zip -qr "../$NAME.zip" nextui ports README-V10.txt CREDITS.txt)
 echo "$OUT/$NAME.zip"
