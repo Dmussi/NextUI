@@ -69,6 +69,7 @@ if [ ! -x "$TOOLS/busybox" ]; then
 	)
 fi
 "${CC_MUSL[@]}" -static -Os -Wall -o "$TOOLS/amixer" "$HERE/tools/amixer.c"
+"$PREFIX_TC/bin/aarch64-linux-gnu-gcc" -shared -fPIC -O2 -Wl,-soname,libcap.so.2 -o "$TOOLS/libcap.so.2" "$HERE/tools/libcap-stub.c"
 # crash reporter (glibc, preloaded into NextUI's programs)
 "$PREFIX_TC/bin/aarch64-linux-gnu-gcc" -shared -fPIC -O1 -g -o "$TOOLS/nextui-crashlog.so" "$HERE/tools/crashlog.c"
 
@@ -120,7 +121,9 @@ for pass in 1 2 3; do
 	done
 	fix_abs_links
 done
-for lib in libEGL.so libGLESv2.so libgbm.so.1 libSDL2-2.0.so.0 libasound.so.2 libc.so.6 librga.so.2; do
+# libudev needs a libcap.so.2 to load (uses none of it)
+[ -e "$L/libcap.so.2" ] || install -m 644 "$TOOLS/libcap.so.2" "$L/libcap.so.2"
+for lib in libudev.so.1 libEGL.so libGLESv2.so libgbm.so.1 libSDL2-2.0.so.0 libasound.so.2 libc.so.6 librga.so.2; do
 	[ -e "$L/$lib" ] || { echo "missing $lib in the system image" >&2; exit 1; }
 done
 
