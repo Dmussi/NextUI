@@ -33,13 +33,25 @@ t() { echo "rcS: $1 $(cut -d' ' -f1 /proc/uptime)"; }
 	# "plugged in" with nothing plugged in, so its meaning is inverted.
 	amixer -q -c 0 sset 'Playback Path' SPK
 	amixer --invert --hp-watch >> /tmp/hp.log 2>&1 &
-	# memory clock changes stall the bus and make the sound crackle: keep
-	# the memory controller at full speed (as ArkOS-style systems do)
-	for d in /sys/class/devfreq/dmc; do
-		echo "dmc: $(cat $d/governor 2>/dev/null) $(cat $d/cur_freq 2>/dev/null) avail: $(cat $d/available_governors 2>/dev/null)"
-		echo performance > $d/governor 2>/dev/null
-		echo "dmc now: $(cat $d/governor 2>/dev/null) $(cat $d/cur_freq 2>/dev/null)"
-	done
+	# memory clock changes stall the bus and make the sound crackle: pin the
+	# memory controller to its top speed (this kernel has no "performance"
+	# governor for it, so use "userspace" with the highest frequency)
+	d=/sys/class/devfreq/dmc
+	if [ -d $d ]; then
+		echo "dmc: $(cat $d/governor) $(cat $d/cur_freq) freqs: $(cat $d/available_frequencies)"
+		top=$(tr ' ' '\n' < $d/available_frequencies | grep -v '^$' | sort -n | tail -1)
+		echo userspace > $d/governor 2>/dev/null && echo "$top" > $d/userspace/set_freq 2>/dev/null
+		echo "$top" > $d/min_freq 2>/dev/null
+		echo "dmc now: $(cat $d/governor) $(cat $d/cur_freq)"
+	fi
 	echo "cpu governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null) avail: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors 2>/dev/null)"
+	# performance log every 15 s (CPU, memory, GPU clocks, temperature),
+	# so slowdowns can be traced
+	(
+		while :; do
+			echo "$(cut -d' ' -f1 /proc/uptime) cpu=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null)/$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null) max=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2>/dev/null) dmc=$(cat /sys/class/devfreq/dmc/cur_freq 2>/dev/null) gpu=$(cat /sys/class/devfreq/ff400000.gpu/cur_freq 2>/dev/null) temp=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null) load=$(cut -d' ' -f1-3 /proc/loadavg)"
+			sleep 15
+		done >> /tmp/perf.log 2>&1
+	) &
 	echo "rcS: done $(cat /proc/uptime)"
 } >> $LOG 2>&1

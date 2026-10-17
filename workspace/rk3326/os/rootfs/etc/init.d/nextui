@@ -26,6 +26,7 @@ while :; do
 	dmesg > $LOGS/dmesg.txt 2>&1
 	cp $LOG $LOGS/boot.txt
 	cp /tmp/hp.log $LOGS/headphones.txt 2>/dev/null
+	tail -n 400 /tmp/perf.log > $LOGS/perf.txt 2>/dev/null
 	sync
 	[ -f /tmp/reboot ] && { reboot; exit 0; }
 	[ -f /tmp/poweroff ] && break
