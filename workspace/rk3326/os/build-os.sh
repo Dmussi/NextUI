@@ -98,14 +98,23 @@ mkdir -p "$L"
 find "$WORK/libs/usr/lib/aarch64-linux-gnu" -maxdepth 1 \( -type f -o -type l \) ! -name '*.a' -exec cp -a {} "$L/" \;
 cp -a "$WORK/libs/lib/ld-linux-aarch64.so.1" "$R/lib/" 2>/dev/null || cp -aL "$L/ld-linux-aarch64.so.1" "$R/lib/"
 ln -sfn ../usr/lib/aarch64-linux-gnu "$R/lib/aarch64-linux-gnu"
+# absolute links into the lib folder become relative ones
+fix_abs_links() {
+	find "$L" -maxdepth 1 -type l | while read -r l; do
+		t=$(readlink "$l")
+		case "$t" in /usr/lib/aarch64-linux-gnu/*|/lib/aarch64-linux-gnu/*) ln -sfn "$(basename "$t")" "$l" ;; esac
+	done
+}
+fix_abs_links
 # the collect step keeps first links and final targets; restore the links in
 # between (libEGL.so -> libMali.so -> libmali-bifrost-g31-...) from the listing
 for pass in 1 2 3; do
 	sed -n 's/^l.* \([^ ]*\) -> \([^ ]*\)$/\1 \2/p' "$C/info/libdir-list.txt" | while read -r link target; do
-		[ -e "$L/$link" ] || [ -L "$L/$link" ] && continue
+		if [ -e "$L/$link" ] || [ -L "$L/$link" ]; then continue; fi
 		t="$target"; case "$t" in /*) t="$R$t" ;; *) t="$L/$t" ;; esac
-		[ -e "$t" ] && ln -s "$target" "$L/$link"
+		if [ -e "$t" ]; then ln -s "$target" "$L/$link"; fi
 	done
+	fix_abs_links
 done
 for lib in libEGL.so libGLESv2.so libgbm.so.1 libSDL2-2.0.so.0 libasound.so.2 libc.so.6 librga.so.2; do
 	[ -e "$L/$lib" ] || { echo "missing $lib in the system image" >&2; exit 1; }
