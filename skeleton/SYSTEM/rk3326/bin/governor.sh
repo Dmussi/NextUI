@@ -10,10 +10,15 @@ set_policy() {
 	local policy_path="$1"
 	local governor="$2"
 	local max_type="$3"  # "max" or "mid"
+	local min_type="$4"  # "mid" raises the floor to the middle frequency
 	
 	[ -f "$policy_path/scaling_available_frequencies" ] || return 0
 	FREQS=$(cat "$policy_path/scaling_available_frequencies" | tr ' ' '\n' | grep -v '^$' | sort -n)
 	MIN_FREQ=$(echo "$FREQS" | head -1)
+	if [ "$min_type" = "mid" ]; then
+		COUNT=$(echo "$FREQS" | wc -l)
+		MIN_FREQ=$(echo "$FREQS" | sed -n "$(( (COUNT + 1) / 2 ))p")
+	fi
 	
 	case "$max_type" in
 		max)
@@ -33,8 +38,10 @@ set_policy() {
 	echo "$governor" > "$policy_path/scaling_governor" 2>/dev/null \
 		|| echo interactive > "$policy_path/scaling_governor" 2>/dev/null \
 		|| echo ondemand > "$policy_path/scaling_governor" 2>/dev/null || true
-	echo "$MIN_FREQ" > "$policy_path/scaling_min_freq"
+	# lower the floor first or the kernel refuses a max below the old min
+	echo "$(echo "$FREQS" | head -1)" > "$policy_path/scaling_min_freq"
 	echo "$MAX_FREQ" > "$policy_path/scaling_max_freq"
+	echo "$MIN_FREQ" > "$policy_path/scaling_min_freq"
 }
 
 # The simple_ondemand GPU governor doesn't perform well under vsync.
@@ -66,10 +73,12 @@ set_gpu_floor() {
 
 case "$MODE" in
 	auto)
-		# RK3326 tops out at 1.296 GHz on the V10 (stock DTB). Let
-		# schedutil use the full hardware frequency range when load requires it.
-		set_policy /sys/devices/system/cpu/cpufreq/policy0 "schedutil" "max"
-		set_policy /sys/devices/system/cpu/cpu0/cpufreq "schedutil" "max"
+		# RK3326 tops out at 1.296 GHz on the V10 (stock DTB). schedutil on
+		# this 4.4 kernel drops to 408 MHz in the middle of a game, which makes
+		# the sound stutter every few minutes. Use Rockchip's "interactive"
+		# governor and never go below the middle frequency (1008 MHz).
+		set_policy /sys/devices/system/cpu/cpufreq/policy0 "interactive" "max" "mid"
+		set_policy /sys/devices/system/cpu/cpu0/cpufreq "interactive" "max" "mid"
 		set_gpu_floor "max"
 		;;
 	performance)
