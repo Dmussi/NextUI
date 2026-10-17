@@ -39,6 +39,10 @@ sh "$LAUNCHER" >> "$PORT_LOG" 2>&1
 echo "port: launcher exited $? $(date)" >> "$PORT_LOG"
 
 umount /mnt/SDCARD >> "$PORT_LOG" 2>&1 || true
+# never hand ArkOS back a switched-off speaker
+if amixer -c 0 sget 'Playback Path' 2>/dev/null | grep -q "Item0: 'OFF'"; then
+	amixer -q -c 0 sset 'Playback Path' SPK
+fi
 printf '\033c' > "$TTY" 2>/dev/null
 
 if [ -f /tmp/reboot ]; then

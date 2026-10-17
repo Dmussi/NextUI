@@ -85,6 +85,7 @@ parse_hook_cmd() {
 
 rk_shutdown() {
 	killall keymon.elf batmon.elf > /dev/null 2>&1 || true
+	rk_restore_speaker
 	rk_unlink_arkos_roms
 	rk_restore_arkos
 	sh "$SYSTEM_PATH/bin/governor.sh" "auto"
@@ -95,7 +96,7 @@ EXEC_PATH="/tmp/nextui_exec"
 NEXT_PATH="/tmp/next"
 rm -f /tmp/poweroff /tmp/reboot
 touch "$EXEC_PATH" && sync
-rk_start_audio_monitor
+# rk_start_audio_monitor   # debug: live codec state to logs/audio-live.txt
 while [ -f "$EXEC_PATH" ]; do
 	echo "launch: starting nextui.elf $(date)" >> "$LAUNCH_LOG"
 	nextui.elf > "$LOGS_PATH/nextui.txt" 2>&1

@@ -173,8 +173,8 @@ extern double panel_fps;
 // ArkOS's stock SDL2 may pick a float format when allowed to; keep the device
 // at the stereo S16 the audio callback writes (SDL converts if it must).
 #define SND_ALLOWED_CHANGES (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_SAMPLES_CHANGE)
-// Log an audio heartbeat every few seconds while the port's sound is verified.
-#define SND_DEBUG_HEARTBEAT 1
+// Uncomment to log an audio heartbeat (callback/sample stats) every ~3 s.
+// #define SND_DEBUG_HEARTBEAT 1
 
 ///////////////////////////////
 

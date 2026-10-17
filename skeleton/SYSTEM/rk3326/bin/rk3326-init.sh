@@ -99,11 +99,17 @@ rk_unlink_arkos_roms() {
 # Requires LOGS_PATH. Make sure the rk817 codec routes to the speaker and
 # record the audio state. (No .asoundrc is copied into NextUI's HOME: NextUI
 # reads a "type hw" entry there as a USB DAC and would move volume control.)
-rk_setup_audio() {
+# Turn the speaker path back on if something left it OFF (ArkOS switches it
+# between SPK and HP itself; OFF means silence everywhere, ArkOS included).
+rk_restore_speaker() {
 	path=$(amixer -c 0 sget 'Playback Path' 2>/dev/null | sed -n "s/.*Item0: '\(.*\)'.*/\1/p")
 	if [ "$path" = "OFF" ] || [ -z "$path" ]; then
 		amixer -q -c 0 sset 'Playback Path' SPK 2>/dev/null || true
 	fi
+}
+
+rk_setup_audio() {
+	rk_restore_speaker
 
 	{
 		echo "== audio $(date)"

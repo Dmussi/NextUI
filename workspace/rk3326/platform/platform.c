@@ -747,7 +747,13 @@ int PLAT_pickSampleRate(int requested, int max) {
 }
 
 void PLAT_overrideMute(int mute) {
-	system(mute ? "amixer -q sset 'Playback Path' OFF" : "amixer -q sset 'Playback Path' SPK");
+	// Mute by volume only. The rk817 'Playback Path' (SPK/HP) belongs to ArkOS,
+	// which switches it for headphones, and nothing here would turn it back
+	// on: switching it OFF silenced every game after start-up.
+	if (mute)
+		SetRawVolume(0);
+	else
+		SetVolume(GetVolume());
 }
 
 char* PLAT_getModel(void) {
